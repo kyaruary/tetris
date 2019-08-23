@@ -1,27 +1,30 @@
-import { IViewer } from "../types";
-import { Square } from "../Square";
+import { Square } from "../Logic/Square";
 import $ from 'jquery';
-import PageConfig from "./PageConfig";
+import { PageConfig } from "../config/page.config";
+import { IViewer } from "./interface/type";
+import { TetrisConfig } from "../config/tetris.config";
+
 export class SquarePageViewer implements IViewer {
     private dom?: JQuery<HTMLElement>;
-    constructor(private sq: Square, private container: JQuery<HTMLElement>) { }
+    constructor(private sq: Square, private container: JQuery<HTMLElement>) {
+        this.container.css({
+            height: PageConfig.height * TetrisConfig.height,
+            width: PageConfig.width * TetrisConfig.width
+        })
+    }
     show(): void {
         if (!this.dom) {
             this.dom = $('<div>').css({
-                position: PageConfig.position,
-                height: PageConfig.SquareHeight,
-                width: PageConfig.SquareWidth,
-                boxSizing: PageConfig.boxSizing,
-                border: PageConfig.border
+                ...PageConfig
             }).appendTo(this.container);
         }
         this.dom.css({
-            top: this.sq.point.y * PageConfig.SquareHeight,
-            left: this.sq.point.x * PageConfig.SquareWidth,
+            top: this.sq.point.y * PageConfig.height,
+            left: this.sq.point.x * PageConfig.width,
             backgroundColor: this.sq.color
         })
     };
     remove(): void {
-        // throw new Error("Method not implemented.");
+        this.dom = undefined;
     }
 }

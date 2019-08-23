@@ -1,5 +1,8 @@
-import { Point, IViewer } from "./types";
-
+import { Point } from "./interface/types";
+import { IViewer } from "../Viewer/interface/type";
+/**
+ * 小块类
+ */
 export class Square {
     private _viewer?: IViewer;
     constructor(private _point: Point, private _color: string) { }
@@ -8,9 +11,7 @@ export class Square {
     }
     public set point(value) {
         this._point = value;
-        if (this._viewer) {
-            this._viewer.show();
-        }
+        this._viewer ? this._viewer.show() : false;
     }
     public get color() {
         return this._color;
@@ -18,10 +19,10 @@ export class Square {
     public set color(value) {
         this._color = value;
     }
-    public get view() {
+    public get viewer() {
         return this._viewer;
     }
-    public set view(value) {
+    public set viewer(value) {
         this._viewer = value;
     }
 }
