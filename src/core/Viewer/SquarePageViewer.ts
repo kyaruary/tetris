@@ -1,8 +1,8 @@
 import { Square } from "../Logic/Square";
 import $ from 'jquery';
-import { PageConfig } from "../config/page.config";
+import { PageConfig } from "../../config/page.config";
 import { IViewer } from "./interface/type";
-import { TetrisConfig } from "../config/tetris.config";
+import { TetrisConfig } from "../../config/tetris.config";
 
 export class SquarePageViewer implements IViewer {
     private dom?: JQuery<HTMLElement>;

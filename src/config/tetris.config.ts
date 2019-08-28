@@ -1,4 +1,4 @@
-import { Shape } from "../Logic/interface/types";
+import { Shape } from "../core/Logic/interface/types";
 
 export const TetrisConfig = {
     width: 12,
@@ -31,11 +31,11 @@ export const lShape: Shape = [[0, 0], [0, -1], [0, 1], [1, -1]]; // L
 
 export const lMirrorShape: Shape = [[0, 0], [0, -1], [0, 1], [1, 1]];  // 反L
 
-export const zShape: Shape = [[0, 0], [0, -1], [1, 1], [1, 0]]; // Z
+export const zShape: Shape = [[0, 0], [-1, -1], [-1, 0], [0, 1]]; // Z
 
-export const zMirrorShape: Shape = [[0, 0], [0, 1], [-1, 1], [1, 0]]; // 反Z
+export const zMirrorShape: Shape = [[0, 0], [-1, 0], [-1, 1], [0, -1]]; // 反Z
 
-export const blockShape: Shape = [[0, 0], [0, 1], [1, 0], [1, 1]]; // 格子
+export const blockShape: Shape = [[0, 0], [0, -1], [-1, 0], [-1, -1]]; // 格子
 
 export const nMnShape: Shape = [[0, 0], [-1, 0], [0, 1], [0, -1]]; // 凸  
 

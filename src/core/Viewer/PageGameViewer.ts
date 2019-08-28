@@ -7,7 +7,7 @@ export class PageGameViewer implements IGameViewer {
     private _container: JQuery<HTMLElement> = $('#app');
     private _tip: JQuery<HTMLElement> = $('#tip');
     showNextTetris(tetris: Tetris): void {
-        // throw new Error("Method not implemented.");
+        this.bindViewer(tetris, this._container);
     }
     init(game: Game) {
         // 初始化游戏区
