@@ -42,16 +42,16 @@ export const nMnShape: Shape = [[0, 0], [-1, 0], [0, 1], [0, -1]]; // 凸
 
 // 数组形式导出 便于生成随机形状的俄罗斯方块
 export const TetrisShape: Shape[] = [
-    lineShape,
-    lShape,
-    lMirrorShape,
-    zShape,
-    zMirrorShape,
+    // lineShape,
+    // lShape,
+    // lMirrorShape,
+    // zShape,
+    // zMirrorShape,
     blockShape,
-    nMnShape
+    // nMnShape
 ]
 
 // 颜色
 
-export const classic = true;
+export const classic = false;
 export const TetrisColors = classic ? ['black'] : ['red', 'blue', 'orange', 'green'];

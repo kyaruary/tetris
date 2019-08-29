@@ -25,6 +25,6 @@ export class SquarePageViewer implements IViewer {
         })
     };
     remove(): void {
-        this.dom = undefined;
+        this.dom.remove();
     }
 }

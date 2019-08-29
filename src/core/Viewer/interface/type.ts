@@ -1,5 +1,6 @@
 import { Tetris } from "../../Logic/Tetris";
 import { Game } from "../../Logic/Game";
+import { GameStatus } from "../../Logic/interface/types";
 
 export interface IViewer {
     show(): void;
@@ -9,4 +10,5 @@ export interface IViewer {
 export interface IGameViewer {
     init(game: Game): void;
     showNextTetris(tetris: Tetris): void;
+    toggleTips(status: GameStatus): void;
 }

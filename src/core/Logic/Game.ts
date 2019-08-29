@@ -1,4 +1,4 @@
-import { Point, GameStatus } from "./interface/types";
+import { Point, GameStatus, IGame } from "./interface/types";
 import { Utils } from "../utils";
 import { TetrisShape, TetrisColors, TetrisConfig } from "../../config/tetris.config";
 import { Tetris } from "./Tetris";
@@ -12,48 +12,44 @@ import { Square } from "./Square";
  * 游戏操作
  */
 
-export class Game {
+export class Game implements IGame {
     private _mainCenterPoint: Point = { x: TetrisConfig.width / 2 - 1, y: 1 };
     private _tipCenterPoint: Point = { x: TetrisConfig.width / 2 - 1, y: 0 };
     private _currentTetris: Tetris;
     private _nextTetris: Tetris;
     private _gameStatus: GameStatus;
-    private _duration?: number = TetrisConfig.levels.easy.duration;
+    private _duration: number = TetrisConfig.levels.easy.duration;
     private _score: number = 0;
     private _exist: Square[] = [];
     private _timer: number;
+    private _layer: number;
     private _isClock = TetrisConfig.isClock;
     private _gameWidth = TetrisConfig.width;
     private _gameHeight = TetrisConfig.height;
+
     constructor(private _viewer: IGameViewer) {
         this.changeGameStatus(GameStatus.init);
         this._viewer.init(this);
     }
 
-    // 游戏开始
-    start() {
-        this.changeGameStatus(GameStatus.playing);
-    }
 
     /**
      * 切换方块
      * 前戏：
-     * 方块落地不能移动之后清楚计时器 
+     * 方块落地不能移动之后清除计时器 
      * 判断已经存在的方块是否可以消除
      * 成功消除方块之后计分 清除方块
      * 判断积分是否达到阈值更改降落速度
      * 生成新的方块并显示
      */
     switchTetris() {
-        clearInterval(this._timer);
-        if(TetrisRule.canEliminate(this._exist, this._gameWidth)){}
         this._currentTetris = this._nextTetris;
         this._currentTetris.centerPoint = this._mainCenterPoint;
         this._nextTetris = this.generateTetris(this._tipCenterPoint);
+        // 修正出现重叠现象
+        this.fixOverlap();
         this._viewer.showNextTetris(this._currentTetris);
-        this.autoDrop();
     }
-    // 将等待方块切换到游戏区
 
     // 上下左右功能
     right1(): boolean {
@@ -80,8 +76,7 @@ export class Game {
         if (this.move(target)) {
             return true;
         } else {
-            this._exist.push(...this._currentTetris.squareGroup);
-            this.switchTetris();
+            this.hitBottom();
             return false;
         }
     }
@@ -91,9 +86,6 @@ export class Game {
     }
 
     rotate(): boolean {
-        if (!this._currentTetris) {
-            return false;
-        }
         const new_shape = TetrisRule.nextRotateShape(this._currentTetris, this._isClock);
         const flag = TetrisRule.canIMove(new_shape, this._currentTetris.centerPoint, this._exist, this._gameWidth, this._gameHeight);
         if (flag) TetrisRule.changeShape(this._currentTetris, new_shape);
@@ -111,34 +103,95 @@ export class Game {
     }
 
     private generateTetris(centerPoint: Point): Tetris {
-        return new Tetris(Utils.getRandomMember(TetrisShape), centerPoint, Utils.getRandomMember(TetrisColors))
+        return new Tetris(Utils.getRandomMember(TetrisShape), centerPoint, Utils.getRandomMember(TetrisColors));
     }
 
     private autoDrop() {
+        if (this._timer || this._gameStatus !== GameStatus.playing) return false;
         this._timer = window.setInterval(() => {
             this.drop1();
         }, this._duration);
     }
 
-    public get currentTetris() {
+    public get currentTetris(): Tetris {
         return this._currentTetris;
     }
+
     private changeGameStatus(status: GameStatus) {
         if (this._gameStatus === status) return false;
-        switch (status) {
+        this._gameStatus = status;
+        switch (this._gameStatus) {
             case GameStatus.init:
                 this._currentTetris = this.generateTetris(this._mainCenterPoint);
                 this._nextTetris = this.generateTetris(this._tipCenterPoint);
                 break;
             case GameStatus.finished:
+                this.finished();
                 break;
             case GameStatus.pause:
+                this.pause();
                 break;
             case GameStatus.playing:
+                this.autoDrop();
                 break;
             default:
                 break;
         }
-        this._gameStatus = status;
+    }
+    // 销毁游戏
+    private destory() { }
+    // 暂停
+    public pauseOrStart() {
+        (this._gameStatus === GameStatus.pause) ? this.changeGameStatus(GameStatus.playing) : this.changeGameStatus(GameStatus.pause);
+        this._viewer.toggleTips(this._gameStatus);
+    }
+    private pause() {
+        this.clearInterval();
+    }
+    // 游戏开始
+    public start() {
+        this.changeGameStatus(GameStatus.playing);
+    }
+    private finished() {
+        this.clearInterval();
+    }
+    public get score() {
+        return this._score;
+    }
+    private clearInterval() {
+        window.clearInterval(this._timer);
+        this._timer = undefined;
+    }
+    private hitBottom() {
+        this.clearInterval();
+        this._exist.push(...this._currentTetris.squareGroup);
+        this.eliminate();
+        const isPeek = this.peekJudgement();
+        if (isPeek) {
+            this.changeGameStatus(GameStatus.finished);
+            this._viewer.toggleTips(this._gameStatus);
+        } else {
+            this.switchTetris();
+            this.autoDrop();
+        }
+    }
+    private eliminate() {
+        const e = TetrisRule.canEliminate(this._exist, this._gameWidth);
+        if (e.length !== 0) {
+            this._exist = TetrisRule.eliminateLines(this._exist, e);
+        }
+    }
+
+    private peekJudgement() {
+        return this._exist.some(e => e.point.y <= 0);
+    }
+    private fixOverlap() {
+        const flag = this._exist.some(e => e.point.x === this._mainCenterPoint.x && e.point.y === this._mainCenterPoint.y);
+        if (flag) {
+            this._currentTetris.centerPoint = {
+                x: this._currentTetris.centerPoint.x,
+                y: this._currentTetris.centerPoint.y
+            }
+        }
     }
 }

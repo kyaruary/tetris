@@ -25,7 +25,7 @@ export class TetrisRule {
          * Array.prototype.some 只要有一个满足条件便返回true
          * 但是返回true意味着移动成功 所以对结果取反
          */
-        borderJudgement = !newTetrisPoint.some(p => (p.x < 0 || p.x > width - 1 || p.y < 0 || p.y > height - 1));
+        borderJudgement = !newTetrisPoint.some(p => (p.x < 0 || p.x > width - 1 || p.y > height - 1));
         // 同理判断方块是否与已经存在的方块有触碰
         squareJudgement = exist ? !newTetrisPoint.some(p => exist.some(e => (e.point.x === p.x && e.point.y === p.y))) : true;
         return borderJudgement && squareJudgement;
@@ -73,35 +73,50 @@ export class TetrisRule {
         tetris.shape = newshape;
     }
 
-    public static eliminateLine(exist: Square[], x: number): Square[] {
-        const after = exist.filter(e => e.point.x !== x);
+    public static eliminateLine(exist: Square[], y: number): Square[] {
+        const after = exist.filter(e => e.point.y !== y);
+        const deleteArr = exist.filter(e => e.point.y === y);
+        deleteArr.forEach(d => d.viewer.remove());
         after.forEach(a => {
-            if (a.point.x > x) {
+            if (a.point.y < y) {
                 a.point = {
-                    x,
-                    y: a.point.y - 1
+                    x: a.point.x,
+                    y: y + 1,
                 }
             }
+            a.viewer.show();
         })
         return after;
     }
     public static canEliminate(exist: Square[], width: number): number[] {
-        exist.forEach(e => {
-
-        })
-        return [1];
+        const ys = exist.map(e => e.point.y);
+        const arr = [];
+        const max = Math.max(...ys);
+        const min = Math.min(...ys);
+        for (let i = min; i <= max; i++) {
+            const length = this.getLineSquares(exist, i);
+            if (length === width) {
+                arr.push(i);
+            }
+        }
+        return arr;
     }
+
+    public static getLineSquares(exist: Square[], y: number): number {
+        return exist.filter(e => e.point.y === y).length;
+    }
+
     public static eliminateLines(exist: Square[], x: number[]): Square[] {
         let after = exist;
-        switch (x.length) {
-            case 0:
-                break;
-            case 1:
-                after = this.eliminateLine(exist, x[0]);
-                break;
-            default:
-                break;
+        const waitForDelete = [...x];
+        const len = waitForDelete.length;
+        if (len === 0) {
+            return after;
+        } else if (len === 1) {
+            return this.eliminateLine(exist, waitForDelete[0]);
+        } else {
+            let f = waitForDelete.shift();
+            return this.eliminateLines(this.eliminateLine(after, f), waitForDelete);
         }
-        return after;
     }
 }
