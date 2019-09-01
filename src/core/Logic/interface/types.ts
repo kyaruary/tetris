@@ -19,6 +19,7 @@ export type Shape = tuple[];
 
 export interface IGame {
     currentTetris: Tetris;
+    nextTetris: Tetris;
     right1(): boolean;
     left1(): boolean;
     drop1(): boolean;

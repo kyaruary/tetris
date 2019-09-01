@@ -3,15 +3,30 @@ import { Tetris } from "../Logic/Tetris";
 import { SquarePageViewer } from "./SquarePageViewer";
 import $ from 'jquery'
 import { IGame, GameStatus } from "../Logic/interface/types";
+import { TetrisConfig } from "../../config/tetris.config";
+import { PageConfig } from "../../config/page.config";
+import { Square } from "../Logic/Square";
 export class PageGameViewer implements IGameViewer {
     private _container: JQuery<HTMLElement> = $('#app');
     private _next: JQuery<HTMLElement> = $('#next');
     private _tips: JQuery<HTMLElement> = $('#tips');
-
-    showNextTetris(tetris: Tetris): void {
-        this.bindViewer(tetris, this._container);
+    private gameArea = TetrisConfig.gameArea;
+    private tipsArea = TetrisConfig.tipsArea;
+    constructor() {
+        this._container.css({
+            height: this.gameArea.height * PageConfig.squareConfig.height,
+            width: this.gameArea.width * PageConfig.squareConfig.width
+        });
+        this._next.css({
+            height: this.tipsArea.height * PageConfig.squareConfig.height,
+            width: this.tipsArea.width * PageConfig.squareConfig.width
+        });
     }
-
+    showNextTetris(c: Tetris, n: Tetris): void {
+        this._next.empty();
+        this.bindViewer(c, this._container);
+        this.bindViewer(n, this._next);
+    }
     /**
      * 初始化游戏区
      * 添加事件监听
@@ -41,34 +56,44 @@ export class PageGameViewer implements IGameViewer {
                     break;
             }
         });
-        game.currentTetris ? this.bindViewer(game.currentTetris, this._container) : false;
+        this.showNextTetris(game.currentTetris, game.nextTetris);
+        this._tips.click(function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            game.pauseOrStart();
+        });
     }
+
     private bindViewer(tetris: Tetris, container: JQuery<HTMLElement>) {
         tetris.squareGroup.forEach(sq => {
             sq.viewer = new SquarePageViewer(sq, container);
             sq.viewer.show();
         })
     }
-
+    public removeExist(exist: Square[]) {
+        exist.forEach(e => {
+            e.viewer.remove();
+        });
+    }
     toggleTips(status: GameStatus): void {
         switch (status) {
             case GameStatus.init:
-                console.log('初始化');
+                this.showTips('开始');
                 break;
             case GameStatus.pause:
-                console.log('暂停');
+                this.showTips('pause😀');
                 break;
             case GameStatus.playing:
-                console.log('开始');
+                this._tips.hide();
                 break;
             case GameStatus.finished:
-                console.log('游戏结束');
+                this.showTips('游戏结束！');
                 break;
             default:
                 break;
         }
     }
-    public static createInstanceTips() {
-
+    private showTips(message: string) {
+        this._tips.text(message).show();
     }
 }

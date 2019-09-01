@@ -1,6 +1,6 @@
 import { Point, GameStatus, IGame } from "./interface/types";
 import { Utils } from "../utils";
-import { TetrisShape, TetrisColors, TetrisConfig } from "../../config/tetris.config";
+import { TetrisShape, TetrisColors, TetrisConfig, blockShape } from "../../config/tetris.config";
 import { Tetris } from "./Tetris";
 import { IGameViewer } from "../Viewer/interface/type";
 import { TetrisRule } from "./TetrisRule";
@@ -13,8 +13,8 @@ import { Square } from "./Square";
  */
 
 export class Game implements IGame {
-    private _mainCenterPoint: Point = { x: TetrisConfig.width / 2 - 1, y: 1 };
-    private _tipCenterPoint: Point = { x: TetrisConfig.width / 2 - 1, y: 0 };
+    private _mainCenterPoint: Point = { x: TetrisConfig.gameArea.width / 2 - 1, y: 1 };
+    private _tipCenterPoint: Point = { x: TetrisConfig.tipsArea.width / 2 - 1, y: 1 };
     private _currentTetris: Tetris;
     private _nextTetris: Tetris;
     private _gameStatus: GameStatus;
@@ -24,12 +24,12 @@ export class Game implements IGame {
     private _timer: number;
     private _layer: number;
     private _isClock = TetrisConfig.isClock;
-    private _gameWidth = TetrisConfig.width;
-    private _gameHeight = TetrisConfig.height;
-
+    private _gameWidth = TetrisConfig.gameArea.width;
+    private _gameHeight = TetrisConfig.gameArea.height;
     constructor(private _viewer: IGameViewer) {
         this.changeGameStatus(GameStatus.init);
         this._viewer.init(this);
+        this._viewer.toggleTips(this._gameStatus);
     }
 
 
@@ -46,9 +46,9 @@ export class Game implements IGame {
         this._currentTetris = this._nextTetris;
         this._currentTetris.centerPoint = this._mainCenterPoint;
         this._nextTetris = this.generateTetris(this._tipCenterPoint);
-        // 修正出现重叠现象
+        // 修正首次出现重叠现象
         this.fixOverlap();
-        this._viewer.showNextTetris(this._currentTetris);
+        this._viewer.showNextTetris(this._currentTetris, this._nextTetris);
     }
 
     // 上下左右功能
@@ -76,7 +76,9 @@ export class Game implements IGame {
         if (this.move(target)) {
             return true;
         } else {
-            this.hitBottom();
+            if (this._gameStatus === GameStatus.playing) {
+                this.hitBottom();
+            }
             return false;
         }
     }
@@ -86,6 +88,12 @@ export class Game implements IGame {
     }
 
     rotate(): boolean {
+        if (this._gameStatus !== GameStatus.playing) {
+            return false;
+        }
+        const isBlock = this._currentTetris.shape.every((s, index) =>
+            s[0] === blockShape[index][0] && s[1] === blockShape[index][1]);
+        if (isBlock) return false;
         const new_shape = TetrisRule.nextRotateShape(this._currentTetris, this._isClock);
         const flag = TetrisRule.canIMove(new_shape, this._currentTetris.centerPoint, this._exist, this._gameWidth, this._gameHeight);
         if (flag) TetrisRule.changeShape(this._currentTetris, new_shape);
@@ -93,7 +101,6 @@ export class Game implements IGame {
     }
 
     private move(target: Point): boolean {
-        // 判断触底 判断边界
         if (!this._currentTetris || this._gameStatus !== GameStatus.playing) return false;
         if (TetrisRule.canIMove(this._currentTetris.shape, target, this._exist, this._gameWidth, this._gameHeight)) {
             TetrisRule.move(this._currentTetris, target);
@@ -116,14 +123,16 @@ export class Game implements IGame {
     public get currentTetris(): Tetris {
         return this._currentTetris;
     }
+    public get nextTetris(): Tetris {
+        return this._nextTetris;
+    }
 
     private changeGameStatus(status: GameStatus) {
         if (this._gameStatus === status) return false;
         this._gameStatus = status;
         switch (this._gameStatus) {
             case GameStatus.init:
-                this._currentTetris = this.generateTetris(this._mainCenterPoint);
-                this._nextTetris = this.generateTetris(this._tipCenterPoint);
+                this.init();
                 break;
             case GameStatus.finished:
                 this.finished();
@@ -137,12 +146,23 @@ export class Game implements IGame {
             default:
                 break;
         }
+        this._viewer.toggleTips(this._gameStatus);
     }
     // 销毁游戏
     private destory() { }
     // 暂停
     public pauseOrStart() {
-        (this._gameStatus === GameStatus.pause) ? this.changeGameStatus(GameStatus.playing) : this.changeGameStatus(GameStatus.pause);
+        switch (this._gameStatus) {
+            case GameStatus.playing:
+                this.changeGameStatus(GameStatus.pause);
+                break;
+            case GameStatus.finished:
+                this.changeGameStatus(GameStatus.init);
+                break;
+            default:
+                this.changeGameStatus(GameStatus.playing);
+                break;
+        }
         this._viewer.toggleTips(this._gameStatus);
     }
     private pause() {
@@ -154,6 +174,7 @@ export class Game implements IGame {
     }
     private finished() {
         this.clearInterval();
+        this._viewer.toggleTips(this._gameStatus);
     }
     public get score() {
         return this._score;
@@ -169,7 +190,6 @@ export class Game implements IGame {
         const isPeek = this.peekJudgement();
         if (isPeek) {
             this.changeGameStatus(GameStatus.finished);
-            this._viewer.toggleTips(this._gameStatus);
         } else {
             this.switchTetris();
             this.autoDrop();
@@ -181,16 +201,22 @@ export class Game implements IGame {
             this._exist = TetrisRule.eliminateLines(this._exist, e);
         }
     }
-
+    private init() {
+        this._currentTetris = this.generateTetris(this._mainCenterPoint);
+        this._nextTetris = this.generateTetris(this._tipCenterPoint);
+        this._viewer.removeExist(this._exist);
+        this._exist = [];
+        this._score = 0;
+        // this.switchTetris();
+    }
     private peekJudgement() {
         return this._exist.some(e => e.point.y <= 0);
     }
     private fixOverlap() {
-        const flag = this._exist.some(e => e.point.x === this._mainCenterPoint.x && e.point.y === this._mainCenterPoint.y);
-        if (flag) {
+        while (this._currentTetris.squareGroup.some(s => this._exist.some(e => e.point.x === s.point.x && e.point.y === s.point.y))) {
             this._currentTetris.centerPoint = {
                 x: this._currentTetris.centerPoint.x,
-                y: this._currentTetris.centerPoint.y
+                y: this._currentTetris.centerPoint.y - 1
             }
         }
     }

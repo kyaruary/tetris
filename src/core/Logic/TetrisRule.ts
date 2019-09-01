@@ -81,7 +81,7 @@ export class TetrisRule {
             if (a.point.y < y) {
                 a.point = {
                     x: a.point.x,
-                    y: y + 1,
+                    y: a.point.y + 1,
                 }
             }
             a.viewer.show();
