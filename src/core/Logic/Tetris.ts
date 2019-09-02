@@ -48,4 +48,7 @@ export class Tetris {
     public get squareGroup() {
         return this._squareGroup;
     }
+    public get color() {
+        return this._color;
+    }
 }

@@ -43,10 +43,9 @@ export class Game implements IGame {
      * 生成新的方块并显示
      */
     switchTetris() {
-        this._currentTetris = this._nextTetris;
+        this._currentTetris = this._currentTetris ? this._nextTetris : this.generateTetris(this._mainCenterPoint);
         this._currentTetris.centerPoint = this._mainCenterPoint;
         this._nextTetris = this.generateTetris(this._tipCenterPoint);
-        // 修正首次出现重叠现象
         this.fixOverlap();
         this._viewer.showNextTetris(this._currentTetris, this._nextTetris);
     }
@@ -174,6 +173,7 @@ export class Game implements IGame {
     }
     private finished() {
         this.clearInterval();
+        this._currentTetris = undefined;
         this._viewer.toggleTips(this._gameStatus);
     }
     public get score() {
@@ -186,7 +186,9 @@ export class Game implements IGame {
     private hitBottom() {
         this.clearInterval();
         this._exist.push(...this._currentTetris.squareGroup);
-        this.eliminate();
+        const en = this.eliminate();
+        this._score += Math.pow(en, 2) * 5;
+        this._viewer.showScore(this._score);
         const isPeek = this.peekJudgement();
         if (isPeek) {
             this.changeGameStatus(GameStatus.finished);
@@ -195,19 +197,20 @@ export class Game implements IGame {
             this.autoDrop();
         }
     }
-    private eliminate() {
+    private eliminate(): number {
         const e = TetrisRule.canEliminate(this._exist, this._gameWidth);
         if (e.length !== 0) {
             this._exist = TetrisRule.eliminateLines(this._exist, e);
         }
+        return e.length;
     }
     private init() {
-        this._currentTetris = this.generateTetris(this._mainCenterPoint);
-        this._nextTetris = this.generateTetris(this._tipCenterPoint);
         this._viewer.removeExist(this._exist);
         this._exist = [];
         this._score = 0;
-        // this.switchTetris();
+        this._duration = TetrisConfig.levels.easy.duration;
+        this.switchTetris();
+        this._viewer.showScore(this._score);
     }
     private peekJudgement() {
         return this._exist.some(e => e.point.y <= 0);

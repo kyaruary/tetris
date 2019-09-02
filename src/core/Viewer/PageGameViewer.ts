@@ -10,6 +10,7 @@ export class PageGameViewer implements IGameViewer {
     private _container: JQuery<HTMLElement> = $('#app');
     private _next: JQuery<HTMLElement> = $('#next');
     private _tips: JQuery<HTMLElement> = $('#tips');
+    private _score: JQuery<HTMLElement> = $('#score');
     private gameArea = TetrisConfig.gameArea;
     private tipsArea = TetrisConfig.tipsArea;
     constructor() {
@@ -56,7 +57,7 @@ export class PageGameViewer implements IGameViewer {
                     break;
             }
         });
-        this.showNextTetris(game.currentTetris, game.nextTetris);
+        // this.showNextTetris(game.currentTetris, game.nextTetris);
         this._tips.click(function (e) {
             e.preventDefault();
             e.stopPropagation();
@@ -95,5 +96,8 @@ export class PageGameViewer implements IGameViewer {
     }
     private showTips(message: string) {
         this._tips.text(message).show();
+    }
+    showScore(score: number): void {
+        this._score.text(score);
     }
 }

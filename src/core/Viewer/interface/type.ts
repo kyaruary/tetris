@@ -13,4 +13,5 @@ export interface IGameViewer {
     showNextTetris(tetris: Tetris, nextTetris: Tetris): void;
     toggleTips(status: GameStatus): void;
     removeExist(exist: Square[]): void;
+    showScore(score: number): void;
 }
